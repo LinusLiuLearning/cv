@@ -1,7 +1,7 @@
-using Microsoft.Azure.CognitiveServices.Vision.ComputerVision.Models;
 using Microsoft.Azure.CognitiveServices.Vision.ComputerVision;
+using Microsoft.Azure.CognitiveServices.Vision.ComputerVision.Models;
 
-namespace cv01
+namespace cv02
 {
     public partial class Form1 : Form
     {
@@ -30,8 +30,22 @@ namespace cv01
                     // 電腦視覺辨識物件指定雲端服務Api位址
                     visionClient.Endpoint = cvApiUrl;
 
+                    // 指定要分析的列舉項目(視覺特徵)，並將分析的列舉存入 visualFeatures
+                    VisualFeatureTypes?[] visualFeatures = new VisualFeatureTypes?[]
+                    {
+                        VisualFeatureTypes.ImageType,
+                        VisualFeatureTypes.Color,
+                        VisualFeatureTypes.Faces,
+                        VisualFeatureTypes.Adult,
+                        VisualFeatureTypes.Categories,
+                        VisualFeatureTypes.Tags,
+                        VisualFeatureTypes.Objects,
+                        VisualFeatureTypes.Brands,
+                        VisualFeatureTypes.Description
+                    };
+
                     // 使用 DescribeImageInStreamAsync()方法傳回辨識分析結果 res
-                    ImageDescription res = await visionClient.DescribeImageInStreamAsync(fs);
+                    ImageAnalysis res = await visionClient.AnalyzeImageInStreamAsync(fs, visualFeatures);
 
                     // 若辨識失敗則傳回null
                     if (res == null)
@@ -41,16 +55,24 @@ namespace cv01
                     }
 
                     // 圖片的辨識內容顯示於 richTexBox1
-                    richTextBox1.Text = $"描述:{res.Captions[0].Text}\n" +
-                        $"信度:{res.Captions[0].Confidence}";
+                    string str = "";
+                    str= $"描述:{res.Description.Captions[0].Text}\n" +
+                        $"信度:{res.Description.Captions[0].Confidence}";
 
-                    string tags = "\n標籤:\n";
-                    for (int i = 0; i < res.Tags.Count; i++)
+                    str += "\n性別與年齡：\n";
+                    for (int i = 0; i < res.Faces.Count(); i++)
                     {
-                        tags += $"\t{res.Tags[i]}\n";
+                        str += $"\t{res.Faces[i].Gender}\t\t{res.Faces[i].Age}\n";
                     }
 
-                    richTextBox1.Text += tags;
+                    str += "\n標籤與信度：\n";
+
+                    for (int i = 0; i < res.Tags.Count(); i++)
+                    {
+                        str += $"\t{res.Tags[i].Name}\t\t{res.Tags[i].Confidence}\n";
+                    }
+
+                    richTextBox1.Text += str;
                     // pictureBox1 顯示指定的圖片
                     pictureBox1.Image = new Bitmap(imagePath);
                     // 釋放影像串流資源
